@@ -1,5 +1,5 @@
-import numpy as np
 import copy
+import random
 
 # ALPHA -> Maximizer
 # BETA -> Minimizer
@@ -7,7 +7,7 @@ import copy
 PLAYER_1 = 1
 BOARD_SIZE = 121
 DEPTH_LIMIT = 3
-
+'''
 # Function to get the Player Number
 def get_player(state, playerNumber):
   actualState = state
@@ -16,7 +16,7 @@ def get_player(state, playerNumber):
     #Do white Magic  (Up to Down)
   else:
     #Do black Magic  (Left to Right)
-
+'''
 # Function to get following nodes
 def get_successors(board):
   successors = []
@@ -28,7 +28,7 @@ def get_successors(board):
   return successors
 
 def evaluate (board):
-  return
+  return random.choice(range(11))
 
 def minimax(board, depth, alpha, beta, turn):
   # Checks if at search bound
@@ -49,8 +49,8 @@ def minimax(board, depth, alpha, beta, turn):
         alpha = min_value
       # Checks if pruning can be done
       if ( beta < alpha ):
-        return alpha
-      return alpha
+        return alpha, next
+    return alpha, next
   else:
     for i in successors:
       next = copy.deepcopy(board)
@@ -59,10 +59,10 @@ def minimax(board, depth, alpha, beta, turn):
       if ( beta > max_value ):
         beta = max_value
       # Checks if pruning can be done
-      if ( alpha > beta )
-        return beta
-      return beta
-
+      if ( alpha > beta ):
+        return beta, next
+    return beta, next
+'''
 # Function to get the value of Alpha
 def get_alpha():
   
@@ -80,4 +80,4 @@ def winning_state(board):
   # DO SOMETHING *poke with a stick*
 
 def main():
-  
+ '''
