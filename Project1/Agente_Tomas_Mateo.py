@@ -1,76 +1,79 @@
 import copy
-import random
 import sys
+import random
 import time
 
-# ALPHA -> Maximizer
-# BETA -> Minimizer
-
-PLAYER_1 = 1
+DEPTH_LIMIT = 100
 BOARD_SIZE = 121
-DEPTH_LIMIT = 3
-BOARD = []
 
-# Function to get following nodes
-def get_successors(board):
-  successors = []
-  upper_limit = BOARD_SIZE-1
-  for i in range(upper_limit):
-      if ( board[i] == 0 ):
-        # Store position in which it's posible to make a move
-        successors.append(i)
-  return successors
-
-def get_goal_state(board):
-  return False
-
-def evaluate (board):
-  heuristic = random.randrange(1, 500)
+def evaluate (game_state):
+  heuristic = random.randint(0, 500)
   return heuristic
 
-def minimax(board, depth, alpha, beta, turn):
-  global BOARD
-  # Checks if at search bound
-  if ( depth == DEPTH_LIMIT):
-    return evaluate(board)
-  # Checks if it has not already won
-  if ( get_goal_state(board) == True ):
-    return winning_state(board), board
-  successors = get_successors(board)
-  # Checks which player is playing: 1 -> Player 1, 2 -> Player 2
-  if ( turn == 1 ):
-    for i in successors:
-      # Create successor state based on possible move
-      next = copy.deepcopy(board)
-      next[i] = 1
-      result = minimax(next, depth+1, alpha, beta, 2)
-      if ( result > alpha ):
-        alpha = result
-        BOARD = board
-      # Checks if pruning can be done
-      if ( alpha >= beta ):
-        return alpha
-    return alpha
-  else:
-    for i in successors:
-      next = copy.deepcopy(board)
-      next[i] = 2
-      result = minimax(next, depth+1, alpha, beta, 1)
-      if ( result < beta):
-        beta = result
-        BOARD = board
-      # Checks if pruning can be done
-      if ( beta <= alpha ):
-        return beta
-    return beta
+def get_available_moves(game_state):
+  children = []
+  upper_limit = BOARD_SIZE-1
+  for i in range(upper_limit):
+      if ( game_state[i] == 0 ):
+        # Store position in which it's posible to make a move
+        children.append(i)
+  return children
+
+def get_min_value(game_state, depth, alpha, beta):
+    if depth == DEPTH_LIMIT:
+        return evaluate(game_state)
+    moves = get_available_moves(game_state)
+    best_score = float('inf')
+    for move in moves:
+        following = copy.deepcopy(game_state)
+        following[move] = 2
+        score = get_max_value(following, depth+1, alpha, beta)
+        if score < best_score:
+            best_move = move
+            best_score = score
+        if best_score < beta and beta <= alpha:
+          return best_score
+        return best_score
+
+def get_max_value(game_state, depth, alpha, beta):
+    if depth == DEPTH_LIMIT:
+        return evaluate(game_state)
+    moves = get_available_moves(game_state)
+    best_score = float('-inf')
+    for move in moves:
+        following = copy.deepcopy(game_state)
+        following[move] = 1
+        score = get_min_value(following, depth+1, alpha, beta)
+        if score > best_score:
+            best_move = move
+            best_score = score
+        if best_score > alpha and beta <= best_score:
+          return best_score
+        return best_score
+
+def minimax(game_state, depth, alpha, beta):
+  moves = get_available_moves(game_state)
+  best_move = []
+  best_score = float('-inf')
+  for move in moves:
+    following = copy.deepcopy(game_state)
+    following[move] = 1
+    score = get_min_value(following, depth+1, alpha, beta)
+    if score > best_score:
+      best_move = following
+      best_score = score
+    if best_score > alpha and beta <= best_score:
+      alpha = best_score
+      return best_move
+  return best_move
 
 def main(argv):
   board = [0] * 121
   board[4] = 1
+
   start = time.time()
-  result = minimax(board, 0, -2000, 2000, 1)
+  result = minimax(board, 0, float('-inf'), float('inf'))
   end = time.time()
-  print(BOARD)
   print(result)
   print(end-start)
 
