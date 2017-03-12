@@ -1,6 +1,4 @@
 import heapq
-import sys
-import time
 
 def dijkstra(player, adjacent, costs, start, end):
     prior_queue = []
@@ -45,9 +43,19 @@ def dijkstra(player, adjacent, costs, start, end):
       Determines whether Dijkstra's algorithm has reached its goal, 
       which is variant, or must keep searching. 
       Example:
-        * left = 10; then the expression ((left%11)-1) == 9 will result in a true
-        statement, which means we have reached the right position and Dijkstra's
-        new goal.
+        Suppose it was given to us a hex board (formatted as a flatten matrix, i.e. a list) 
+        in which position number 10 is occupied by our enemy and we are playing as player 2,
+        such as board[10] = 1. Therefore, the board's cost dictionary would contain:
+        {..., (9, 10):Inf, (20, 10):Inf, (21, 10):Inf, ...} and there would be 120 free 
+        positions in which to make a move.
+        The get_start_position(2, board) function would return '0', as it is the first possible
+        position in which to make a move and "end" would be set to 10 (read the "evaluation" function
+        for more details). Therefore, Dijkstra's algorithm would try to stablish the minimum cost path
+        to get from start to end, returning "Infinity", as all costs from 10's neighbours to itself are
+        "Infinity", and passing through 21.
+        To avoid Dijkstra's algorithm to return "Infinity", "is_terminal_node" would evaluate whether 21
+        is at the rightmost position of the board: ((21%11)-1) == 9? or not. It is, so "end" will be now
+        equal to 21 and the minimum cost path would be returned.
     '''
 def is_terminal_node(player, left):
   if player == 1:                    # Checks if left is one of the board's bottom positions
@@ -55,6 +63,13 @@ def is_terminal_node(player, left):
   else:                              # Checks if left is one of the board's right position
     return ((left%11)-1) == 9
   
+  '''
+    Determines which position is suitable to be Dijkstra's algorithm starting node
+    based on which player is playing. 
+    If player 1 is playing, then only the board's top positions (0, 1, 2, ... , 10) 
+    are considered; otherwise it is assumed player 2 is playing and only the board's
+    right positions (0, 11, 22, ... , 110) are considered.
+  '''
 def get_start_position(player, game_state):  
   if player == 1:
     if game_state[0] == 0:
@@ -103,21 +118,22 @@ def get_start_position(player, game_state):
     elif game_state[110] == 0:
       return 110
 
+  '''
+    Determines an specific move's near positions based on which player
+    if playing.
+  '''   
 def get_neighbours(move):
-  # Left side of the board = 0, 11, 22, 33, ..., 110
-  if move%11 == 0: 
+  if move%11 == 0:             # Left side of the board = 0, 11, 22, 33, ..., 110
     neighbours = [move - 11,
                   move - 10,
                   move + 1,
                   move + 11]
-  # Right side of the board = 10, 21, 32, ..., 120
-  elif ((move%11)-1) == 9:
+  elif ((move%11)-1) == 9:     # Right side of the board = 10, 21, 32, ..., 120
     neighbours = [move - 11,
                   move - 1,
                   move + 10,
                   move + 11]
-  # All the other neighbours
-  else:
+  else:                        # All the other neighbours
     neighbours = [move - 11,
                   move - 10,
                   move - 1,
@@ -126,6 +142,14 @@ def get_neighbours(move):
                   move + 11]    
   return [n for n in neighbours if n > 0 and n < 121]
   
+  '''
+    Based on the graph main concept of having a group of
+    nodes, their adjacents and the cost of moving from
+    one of them to another, two dictionaries are returned.
+    Their structure is as following:
+      1) adjacents = {<node>:[<node's neighbour>, <node's neighbour>, ...]}
+      2) cost = {(<source node>, <destination node>):<cost>, ...}
+  '''
 def get_graph(player, game_state):
   adjacents = {}
   cost = {}    
@@ -148,37 +172,23 @@ def get_graph(player, game_state):
       else:                             # Player 2 has made a move in this position
         cost[(move, neighbour)] = cost_player2
   return adjacents, cost
-    
-def get_available_moves(game_state):
-  children = []
-  upper_limit = 120
-  for i in range(upper_limit):
-    children.append(i)      # Store position in which it's posible to make a move
-  return children
-    
+  
+  '''
+    Uses Dijkstra's algorithm to get a reliable heuristic regarding the
+    minimum path cost to get from the top to the bottom of the board,
+    if player 1, or the right to the left side of the board, if player 2.
+    Remark:
+      The algorithm works by iterating over a 11 x 11 flatten matrix (i.e. a list),
+      which means moving across rows is done by adding 11 to a given position 
+      (it also means 11 is the jump value between rows and 1 is the jump value 
+      between columns).
+  '''
 def evaluate(player, game_state):
   adjacents, cost = get_graph(player, game_state)  
   start = get_start_position(player, game_state)
   if player == 1:
-    end = start + 110
+    end = start + 110  # start + ((number_of_rows - 1) * jump_between_rows)
   else:
-    end = start + 10
+    end = start + 10   # start + ((number_of_columns -1) * jump_between_columns)
   predecessors, min_cost = dijkstra(player, adjacents, cost, start, end)
   return min_cost
-"""
-def main(argv):
-  board = [0] * 121
-  board[1] = 1
-  board[12] = 1
-  board[23] = 1
-  board[10] = 1
-  player = 2
-  s = time.time()
-  result = evaluate(player, board)
-  e = time.time()
-  print(e-s)
-  print 'evaluate: ', result
-  
-if __name__ == "__main__":
-    main(sys.argv)
-"""
