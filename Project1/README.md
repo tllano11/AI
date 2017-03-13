@@ -6,5 +6,9 @@ Create an Agent, based on the search algorithms reviewed on the course
 capable of playing HEX and get the best possible performance at execution
 time, so that each move a player does takes less than five (5) seconds.
 
-## Execution requirements
+## General information
+### Execution requirements
 * Python 3
+### Who are involved?
+* Tomás Felipe Llano Ríos
+* Mateo Gutiérrez Gómez
