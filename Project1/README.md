@@ -9,6 +9,7 @@ time, so that each move a player does takes less than five (5) seconds.
 ## General information
 ### Execution requirements
 * Python 3
+
 ### Who are involved?
 * Tomás Felipe Llano Ríos
 * Mateo Gutiérrez Gómez
