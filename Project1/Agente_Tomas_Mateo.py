@@ -104,7 +104,7 @@ def minimax(player, game_state, depth, alpha, beta):
 '''
 def main(player, game_state):
   game_state = [item for sublist in game_state for item in game_state]
-  result =  minimax(player, board, 0, float('-inf'), float('inf'))
+  result =  minimax(player, game_state, 0, float('-inf'), float('inf'))
   tmp = []
   result_matrix = []
   for i in range(0, 121):
