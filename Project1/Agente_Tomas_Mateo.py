@@ -2,7 +2,7 @@ import copy
 from eval_fun import evaluate
 import sys
 
-DEPTH_LIMIT = 3
+DEPTH_LIMIT = 100
 BOARD_SIZE = 121
 
 '''
@@ -163,7 +163,7 @@ def get_column(it, row):
   A pseudo "main"-like function called when it is desired to
   to get the best possible move by using the minimax algorithm.
 '''
-def Agente_Tomas_Mateo(player, game_state):
+def Agente_Tomas_Mateo(game_state, player):
   game_state = [item for sublist in game_state for item in sublist]
   result =  minimax(player, game_state, 0, float('-inf'), float('inf'))
   if result == []:
