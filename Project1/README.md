@@ -24,3 +24,13 @@ game state in order to make the Agent do the best moves
 ### Who are involved?
 * Tomás Felipe Llano Ríos
 * Mateo Gutiérrez Gómez
+
+### How to call the agent from Jupyther?
+* Add the line:
+  ```
+  from Agente_Tomas_Mateo import Agente_Tomas_Mateo
+  ```
+* Call the agent by adding the line:
+  ```
+  Agente_Tomas_Mateo(state, player_number)
+  ```
