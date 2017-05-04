@@ -21,15 +21,23 @@ class Node:
     self.id = id
     self.adjacents = self.__get_adjacents_from_id(id)
     self.value = value
-    self.prob_trans = int(1/len(self.adjacents))
+    self.prob_trans = 1/len(self.adjacents)
   
-  def __get_adjacents_from_id(self, position):
-    if position == 0 or position == 5 or 10 or position == 15 or position == 20:
+  def __get_adjacents_from_id(self, position):    
+    if position == 0:
       return [position + 5, position + 1]
-    elif position == 4 or position == 9 or position == 14 or position == 19 or position == 24:
+    elif position == 4:
       return [position + 5, position - 1]
-    elif position == 1	or position == 2 or position == 3:
+    elif position == 20:
+      return [position - 5, position + 1]
+    elif position == 24:
+      return [position - 5, position - 1]
+    elif position == 1 or position == 2 or position == 3:
       return [position + 5, position - 1, position + 1]
+    elif position == 9 or position == 14 or position == 19:
+      return [position + 5, position - 5, position - 1]
+    elif position == 5 or position == 10 or position == 15:
+      return [position + 5, position - 5, position + 1]
     elif position == 21 or position == 22 or position == 23:
       return [position - 5, position - 1, position + 1]
     else:
@@ -60,13 +68,13 @@ class AgentNone:
     if self.player is None:
       self.player = current_player
     if self.init_pos is None:
-      self.init_pos = init_pos
+      self.current_pos = init_pos
     
     if enemy_action == SHOOT:
       pass
     elif enemy_action == MEASURE:
       if color == GREEN or color == YELLOW:
-        move(init_pos, val_measure)        #value of measure
+        move(hmm[current_pos], val_measure)        #value of measure
     elif enemy_action == MOVE:
       pass
  
@@ -105,49 +113,9 @@ class AgentNone:
     evpi = ev_pi - emv
     return evpi
   
-  def move(self, position, val_measure):
-    """Determines which movement to do, based on the measure made by the enemy
-    current_position = position - 5     #Move Up
-    current_position = position + 5     #Move Down
-    current_position = position - 1     #Move Left
-    current_position = position + 1     #Move Right
-    """
-    #Comprueba la posicion de Sensado y se mueve a esa posicion
-    if val_measure - 1 == current_position or val_measure + 1 == current_position or val_measure - 5 == current_position or val_measure + 5 == current_position:
-      current_position = val_measure
-    else: #Comprueba esquinas y bordes del tablero y se mueve random en los espacios posibles
-      if position == 0 or position == 5 or 10 or position == 15 or position == 20:
-        current_position = position + int(random.choice(["5","1"]))
-      elif position == 4 or position == 9 or position == 14 or position == 19 or position == 24:
-        current_position = position - int(random.choice(["-5","1"]))
-      elif position == 1	or position == 2 or position == 3:
-        current_position = position - int(random.choice(["-5","-1","1"]))
-      elif position == 21 or position == 22 or position == 23:
-        current_position = position - int(random.choice(["5","-1","1"]))
-      else:
-        current_position = position - int(random.choice(["-5","5","-1","1"]))
-    
-    """if val_measure - 1 == current_position or val_measure + 1 == current_position or val_measure - 5 == current_position or val_measure + 5 == current_position or val_measure == current_position:
-      if position == 0 or position == 5 or 10 or position == 15 or position == 20:
-        current_position = position + 5
-        current_position = position + 1
-      elif position == 4 or position == 9 or position == 14 or position == 19 or position == 24:
-        current_position = position + 5
-        current_position = position - 1
-      elif position == 1	or position == 2 or position == 3:
-        current_position = position + 5
-        current_position = position - 1
-        current_position = position + 1
-      elif position == 21 or position == 22 or position == 23:
-        current_position = position - 5
-        current_position = position - 1
-        current_position = position + 1
-      else:
-        current_position = position - 5
-        current_position = position + 5
-        current_position = position - 1
-        current_position = position + 1"""
-    return current_position
+  def move(self, state, val_measure):
+    possible_moves = state.adjacents
+    current_position = random.choice(possible_moves)    
   
   def shoot(self):
     #DIE
@@ -164,7 +132,8 @@ def main():
   print("p: ", p)
   print("R: ", R)
   a = AgentNone()
-  print(a.get_evpi(R.tolist(), p.tolist(), 3, 25))
+  print("EVPI", a.get_evpi(R.tolist(), p.tolist(), 3, 25))
+  print(a.hmm[16].prob_trans)
   
 if __name__ == "__main__":
   main()
