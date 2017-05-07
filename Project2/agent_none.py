@@ -218,25 +218,40 @@ class AgentNone:
     return np.array([node.value for node in self.net]).reshape(5,5)
   
   def run_agent_none(self, current_player, our_result, enemy_action, init_pos):
+    
+    if enemy_action is not None:
+      enemy_action[1] -= 1
+    
     if self.player is None:
       self.player = current_player
     
     if self.current_pos is None:
-      self.current_pos = init_pos
+      self.current_pos = init_pos - 1
     
-    if self.last_measured_pos is None and self.player == 0:
-      self.last_measured_pos = self.determine_measure_position()
-      return self.measure(self.last_measured_pos)
-    elif self.last_measured_pos is None and self.player == 1:
+    if self.last_measured_pos is None and self.player == 1:
+      pos_measure = self.determine_measure_position()
+      return self.measure(pos_measure)
+    elif self.last_measured_pos is None and self.player == 2:
       action_based_on_enemy = self.desition_based_on_enemy(enemy_action)
       return action_based_on_enemy
     
+    action_based_on_us = self.desition_based_on_us(our_result)
+    action_based_on_enemy = self.desition_based_on_enemy(enemy_action)
+    
+    if action_based_on_enemy[0] == MOVE:
+      return action_based_on_enemy
+    else:
+      return action_based_on_us
+    
+    
+    """
     action_based_on_enemy = self.desition_based_on_enemy(enemy_action)
     if action_based_on_enemy[0] == MOVE:
       return action_based_on_enemy
     
     action_based_on_us = self.desition_based_on_us(our_result)    
     return action_based_on_us
+    """
     
   def __get_best_pos_to_shoot(self):
     transition_probabilities = self.__get_net_probs()
@@ -244,9 +259,10 @@ class AgentNone:
     hmm = HMM(transition_probabilities, emission_probabilities)
     emissions = [2, 1, 0]
     initial = self.__get_net_probs()
-    return(self.viterbi(hmm, initial, emissions))
+    return(self.viterbi(hmm, initial, emissions)[0])
 
   def desition_based_on_us(self, action_result):
+    print(action_result)
     if isinstance(action_result, int) or action_result is None:
       pos_to_measure = self.determine_measure_position()
       return self.measure(pos_to_measure)
@@ -269,11 +285,11 @@ class AgentNone:
         self.update_probs(enemy_action[2], enemy_action[1], True)
         if enemy_action[2] == GREEN or enemy_action[2] == YELLOW:
           pos_to_move = self.determine_move_position()
-          return move(pos_to_move)
+          return self.move(pos_to_move)
       elif enemy_action[0] == SHOOT:
         if self.__get_distance(self.current_pos, enemy_action[1]) < 2:
           pos_to_move = self.determine_move_position()
-          return move(pos_to_move)
+          return self.move(pos_to_move)
 
     pos_to_measure = self.determine_measure_position()
     return self.measure(pos_to_measure)
@@ -296,24 +312,34 @@ class AgentNone:
     return state_seq
   
   def move(self, pos_to_move):
-    return [MOVE, pos_to_move]
+    self.current_pos = pos_to_move
+    return [MOVE, pos_to_move + 1]
   
   def shoot(self, pos_to_shoot):
-    return [SHOOT, pos_to_shoot]
+    return [SHOOT, pos_to_shoot + 1]
     
   def measure(self, pos_to_measure):
     self.last_measured_pos = pos_to_measure
-    return [MEASURE, pos_to_measure]
+    return [MEASURE, pos_to_measure + 1]
   
 def main():
   a = AgentNone()
   #  print("ANTES: ",[x.value for x in a.net], "\n")
   #  print("Measure position: ", a.determine_measure_position())
-  #   a.update_probs("verde", 13)
-  #   a.update_probs("amarillo", 13)
+  #print(a.determine_measure_position(), "\n")
+  #a.update_probs("verde", 13)
+  #a.update_probs("amarillo", 13)
+  #a.update_probs("rojo", 11)
+  #print(np.array([x.value for x in a.net]).reshape(5,5), "\n")
+  #a.current_pos = 13
+  print(a.run_agent_none(1, None, None, 13))
+  print(a.run_agent_none(1, "amarillo", [2, 12, "amarillo"], 13))
+  print(a.run_agent_none(1, "verde", [2, 12, "amarillo"], 13))
+  print(np.array([x.value for x in a.net]).reshape(5,5), "\n")
+  #print(a.determine_move_position())
   #   print("DESPUES: ",[x.value for x in a.net])
   #   print("Measure position: ", a.determine_measure_position())
-  print(a.run_agent_none(1, None, None, 12))
+  #print(a.run_agent_none(1, None, None, 12))
   
 if __name__ == "__main__":
   main()
