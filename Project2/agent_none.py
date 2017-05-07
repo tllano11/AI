@@ -1,7 +1,7 @@
 from operator import itemgetter
 import random
 import numpy as np
-#from hmm import HMM
+from hmm import HMM
 
 BOARD_SIZE = 25
 
@@ -22,67 +22,41 @@ class Node:
     self.prob_trans = 1/len(self.adjacents)
     self.value = None
     
-  def __get_adjacents_from_id(self, position):    
-    if position == 0:
+  def __get_adjacents_from_id(self, position):
+    """Returns adjacent positions from a given position.
+    
+    Keyword arguments:
+    position -- Position from which to find adjacent positions.
+    """
+    if position == 0: #Upper-left corner.
       return [position + 5, position + 1]
-    elif position == 4:
+    elif position == 4: #Upper-right corner.
       return [position + 5, position - 1]
-    elif position == 20:
+    elif position == 20: #Lower-left corner.
       return [position - 5, position + 1]
-    elif position == 24:
+    elif position == 24: #Lower-right corner.
       return [position - 5, position - 1]
-    elif position == 1 or position == 2 or position == 3:
+    elif position == 1 or position == 2 or position == 3: #Upper wall.
       return [position + 5, position - 1, position + 1]
-    elif position == 9 or position == 14 or position == 19:
+    elif position == 9 or position == 14 or position == 19: #Right wall.
       return [position + 5, position - 5, position - 1]
-    elif position == 5 or position == 10 or position == 15:
+    elif position == 5 or position == 10 or position == 15: #Left wall.
       return [position + 5, position - 5, position + 1]
-    elif position == 21 or position == 22 or position == 23:
+    elif position == 21 or position == 22 or position == 23: #Bottom wall.
       return [position - 5, position - 1, position + 1]
-    else:
+    else: #All other positions.
       return [position - 5, position + 5, position - 1, position + 1]
 
 
 class AgentNone:
-
-  def viterbi(hmm, initial, emissions):
-    
-    """transition_probabilities = np.array([[0.7, 0.4], [0.3, 0.6]])
-        emissions = [2, 1, 0]
-        emission_probabilities = np.array([[0.1, 0.4, 0.5], [0.6, 0.3, 0.1]])
-        initial = np.array([[0.6, 0.4]])
-        hmm = HMM(transition_probabilities, emission_probabilities)
-        print(viterbi(hmm, initial, emissions))
-    """
-    
-    probabilities = hmm.emission(emissions[0]) * initial
-    stack = []
-
-    for emission in emissions[1:]:
-        trans_probabilities = hmm.transition_probabilities * np.row_stack(probabilities)
-        max_col_ixs = np.argmax(trans_probabilities, axis=0)
-        probabilities = hmm.emission(emission) * trans_probabilities[max_col_ixs, np.arange(hmm.num_states)]
-
-        stack.append(max_col_ixs)
-
-    state_seq = [np.argmax(probabilities)]
-
-    while stack:
-        max_col_ixs = stack.pop()
-        state_seq.append(max_col_ixs[state_seq[-1]])
-
-    state_seq.reverse()
-
-    return state_seq
-  
+ 
   def __init__(self):
     self.player = None
-    self.init_pos = None
+    self.current_pos = None
+    self.last_measured_pos = None
     self.ct = self.__get_color_table()
-    #self.net = self.__get_net(BOARD_SIZE)
-    self.net = self.__get_net(25)
-    self.probabilities = [random.random()]*25
-    #self.__set_initial_probs()
+    self.net = self.__get_net(BOARD_SIZE)
+    self.enemy_net = self.__get_net(BOARD_SIZE)
   
   def __get_color_table(self):
     """Returns the probabilities for obtaining an specific
@@ -125,15 +99,20 @@ class AgentNone:
     distance = abs(row_i-row_j) + abs(column_i-column_j)
     return distance
     
-  def update_probs(self, measure, p):
+  def update_probs(self, measure, p, enemy_net = False):
     """Updates board probabilities regarding where the enemy might be.
     
     Keyword arguments:
     measure -- Color obtained from measure: green, yellow, orange, red
     p -- The position where the measure was made
+    enemy_net -- If true, then all updates will be done to the enemy net.
     """
     tmp_net = []
     net_size = len(self.net)
+    if not enemy_net:
+      net = self.net
+    else:
+      net = self.enemy_net
     #Maps a given color to its corresponding column in the color's 
     #probability table.
     if measure == GREEN:
@@ -149,22 +128,22 @@ class AgentNone:
     for j in range(0, net_size):
       distance = self.__get_distance(p, j)
       if distance == 0: #When updating the measured position's probability.
-        tmp_net.append(self.net[j].value * self.ct[0][color])
+        tmp_net.append(net[j].value * self.ct[0][color])
       elif distance == 1: #When updating an adjacent position to the one measured.
-        tmp_net.append(self.net[j].value * self.ct[1][color])
+        tmp_net.append(net[j].value * self.ct[1][color])
       elif distance == 2: #When updating a position at two cells from the one measured.
-        tmp_net.append(self.net[j].value * self.ct[2][color])
+        tmp_net.append(net[j].value * self.ct[2][color])
       elif distance == 3: #When updating a position at three cells from the one measured.
-        tmp_net.append(self.net[j].value * self.ct[3][color])
+        tmp_net.append(net[j].value * self.ct[3][color])
       else: #When updating a position at four or more cells from the one measured.
-        tmp_net.append(self.net[j].value * self.ct[4][color])
+        tmp_net.append(net[j].value * self.ct[4][color])
     #Obtains summation of new probabilities in order to execute 
     #a posterior normalization.
     total = sum(tmp_net)
     #Normalizes new probabilities and assigns them to its 
     #corresponding position.
     for i in range(0, net_size):
-      self.net[i].value = tmp_net[i]/total
+      net[i].value = tmp_net[i]/total
   
   def determine_measure_position(self):
     """Returns the best position to measure.
@@ -198,103 +177,143 @@ class AgentNone:
     #Returns the position in which the probability of
     #obtaining green when measuring is the highest.
     return np.argmax(green_probs)
+
+  def determine_move_position(self):
+    """Returns the best position to move.
+    In order to achieve it, the function calculates
+    the Manhattan distance between all positions and
+    each position being analyzed (adjacents), performing 
+    inference by applying the belief propagation algorithm. It
+    mainly aims to minimize the enemy's probability of measure
+    green at a time t+1.
+    """
+    green_probs = []
+    net_size = len(self.net)
+    adjacents = self.net[self.current_pos].adjacents
+    #Belief propagation:
+    #Analyzes each position's probability of obtaining
+    #green when measuring at a time t+1.
+    for i in adjacents:
+      accum = 0
+      for j in range(0, net_size):
+        distance = self.__get_distance(i, j)
+        if distance == 0: #Probability of measure green at distance 0 from 'i'.
+          accum += self.enemy_net[i].value * self.ct[0][0]
+        elif distance == 1: #Probability of measure green at distance 1 from 'i'.
+          accum += self.enemy_net[i].value * self.ct[1][0]
+        elif distance == 2: #Probability of measure green at distance 2 from 'i'.
+          accum += self.enemy_net[i].value * self.ct[2][0]
+        elif distance == 3: #Probability of measure green at distance 3 from 'i'.
+          accum += self.enemy_net[i].value * self.ct[3][0]
+        else: #Probability of measure green at a distance >= 4 from 'i'.
+          accum += self.enemy_net[i].value * self.ct[4][0]
+      green_probs.append((i, accum))
+    #Returns the position in which the probability of
+    #obtaining green when measuring is the lowest.
+    return min(green_probs, key=itemgetter(1))[0]
   
-  def __set_initial_probs(self):
-    tmp_net = []
-    for i in range(0, len(self.net)):
-      prob_dist_0 = 1
-      prob_dist_1 = len(self.net[i].adjacents)
-      if prob_dist_1 == 4:
-        if i == 12:
-          prob_dist_2 = 8
-          prob_dist_3 = 8  
-        else:
-          prob_dist_2 = 7
-          prob_dist_3 = 7
-      elif prob_dist_1 == 3:
-        if i == 10 or i == 14 or i == 2 or i == 22:
-          prob_dist_2 = 5
-        else:
-          prob_dist_2 = 4
-        prob_dist_3 = 5
-      else:
-        prob_dist_2 = 3
-        prob_dist_3 = 4
-      prob_dist_4 = 25 - (prob_dist_0 + prob_dist_1 + prob_dist_2 + prob_dist_3)
-      tmp_net.append((prob_dist_0*self.ct[0][0] + prob_dist_1*self.ct[1][0] + prob_dist_2*self.ct[2][0] + prob_dist_3*self.ct[3][0] + prob_dist_4*self.ct[4][0])/25)
-    
-    total = sum(tmp_net)
-    for i in range(0, len(self.net)):
-      self.net[i].value = tmp_net[i]/total
+  def __get_net_probs(self):
+    """Returns a matrix containing all probabilities from each node comprising the net.
+    """
+    return np.array([node.value for node in self.net]).reshape(5,5)
   
-  def run_agent_none(self, current_player, result_enemy_action, enemy_action, init_pos):
+  def run_agent_none(self, current_player, our_result, enemy_action, init_pos):
     if self.player is None:
       self.player = current_player
-    if self.init_pos is None:
+    
+    if self.current_pos is None:
       self.current_pos = init_pos
     
-    if enemy_action == SHOOT:
-      pass
-    elif enemy_action == MEASURE:
-      if color == GREEN or color == YELLOW:
-        move(net[current_pos], val_measure)
-    elif enemy_action == MOVE:
-      pass
- 
-  def desition(self, enemy_action, result_enemy_action):
-    if enemy_action == MEASURE:
-      if result_enemy_action == GREEN or result_enemy_action == YELLOW:
-        move()
-    else:
-        scan()
-  
-  def __get_emv(self, R, p, n_actions, n_cells):
-    ep = []
-    for i in range(0, n_actions):
-      accum = 0
-      for j in range(0, n_cells):
-        accum += R[i][j] * p[j]
-      ep.append(accum)
-    return max(ep)
-  
-  def __get_ev_pi(self, R, p, n_actions, n_cells):
-    accum = 0
-    maxim = 0
-    action = 0
-    for j in range(0, n_cells):
-      for i in range(0, n_actions):
-        if R[i][j] > maxim:
-          maxim = R[i][j]
-      accum += maxim * p[j]
-    return accum
-  
-  def get_evpi(self, R, p, n_actions, n_cells):
-    emv = self.__get_emv(R, p, n_actions, n_cells)
-    print("EMV:", emv)
-    ev_pi = self.__get_ev_pi(R, p, n_actions, n_cells)
-    print("EV|PI:", ev_pi)
-    evpi = ev_pi - emv
-    return evpi
-  
-  def move(self, state, val_measure):
-    possible_moves = state.adjacents
-    current_position = random.choice(possible_moves)    
-  
-  def shoot(self):
-    #DIE
-    pass
+    if self.last_measured_pos is None and self.player == 0:
+      self.last_measured_pos = self.determine_measure_position()
+      return self.measure(self.last_measured_pos)
+    elif self.last_measured_pos is None and self.player == 1:
+      action_based_on_enemy = self.desition_based_on_enemy(enemy_action)
+      return action_based_on_enemy
     
-  def scan(self):
-    #GOT YOU
-    pass
+    action_based_on_enemy = self.desition_based_on_enemy(enemy_action)
+    if action_based_on_enemy[0] == MOVE:
+      return action_based_on_enemy
+    
+    action_based_on_us = self.desition_based_on_us(our_result)    
+    return action_based_on_us
+    
+  def __get_best_pos_to_shoot(self):
+    transition_probabilities = self.__get_net_probs()
+    emission_probabilities = self.__get_net_probs()
+    hmm = HMM(transition_probabilities, emission_probabilities)
+    emissions = [2, 1, 0]
+    initial = self.__get_net_probs()
+    return(self.viterbi(hmm, initial, emissions))
+
+  def desition_based_on_us(self, action_result):
+    if isinstance(action_result, int) or action_result is None:
+      pos_to_measure = self.determine_measure_position()
+      return self.measure(pos_to_measure)
+    elif isinstance(action_result, str):
+      self.update_probs(action_result, self.last_measured_pos)
+      if action_result == GREEN:
+        self.update_probs(YELLOW, self.last_measured_pos)
+        pos_to_shoot = self.__get_best_pos_to_shoot()
+        return self.shoot(pos_to_shoot)
+      elif action_result == YELLOW:
+        pos_to_shoot = self.__get_best_pos_to_shoot()
+        return self.shoot(pos_to_shoot)
+      else:
+        pos_to_measure = self.determine_measure_position()
+        return self.measure(pos_to_measure)
+
+  def desition_based_on_enemy(self, enemy_action):
+    if enemy_action is not None:
+      if enemy_action[0] == MEASURE:
+        self.update_probs(enemy_action[2], enemy_action[1], True)
+        if enemy_action[2] == GREEN or enemy_action[2] == YELLOW:
+          pos_to_move = self.determine_move_position()
+          return move(pos_to_move)
+      elif enemy_action[0] == SHOOT:
+        if self.__get_distance(self.current_pos, enemy_action[1]) < 2:
+          pos_to_move = self.determine_move_position()
+          return move(pos_to_move)
+
+    pos_to_measure = self.determine_measure_position()
+    return self.measure(pos_to_measure)
+  
+  def viterbi(self, hmm, initial, emissions):
+    probabilities = hmm.emission(emissions[0]) * initial
+    stack = []
+    
+    for emission in emissions[5:]:
+        trans_probabilities = hmm.transition_probabilities * np.row_stack(probabilities)
+        max_col_ixs = np.argmax(trans_probabilities, axis=0)
+        probabilities = hmm.emission(emission) * trans_probabilities[max_col_ixs, np.arange(hmm.num_states)]
+        stack.append(max_col_ixs)
+    state_seq = [np.argmax(probabilities)]
+
+    while stack:
+        max_col_ixs = stack.pop()
+        state_seq.append(max_col_ixs[state_seq[-1]])
+    state_seq.reverse()
+    return state_seq
+  
+  def move(self, pos_to_move):
+    return [MOVE, pos_to_move]
+  
+  def shoot(self, pos_to_shoot):
+    return [SHOOT, pos_to_shoot]
+    
+  def measure(self, pos_to_measure):
+    self.last_measured_pos = pos_to_measure
+    return [MEASURE, pos_to_measure]
   
 def main():
   a = AgentNone()
-  print("ANTES: ",[x.value for x in a.net], "\n")
-  print("Measure position: ", a.determine_measure_position())
-  a.update_probs("amarillo", 19)
-  print("DESPUES: ",[x.value for x in a.net])
-  print("Measure position: ", a.determine_measure_position())
+  #  print("ANTES: ",[x.value for x in a.net], "\n")
+  #  print("Measure position: ", a.determine_measure_position())
+  #   a.update_probs("verde", 13)
+  #   a.update_probs("amarillo", 13)
+  #   print("DESPUES: ",[x.value for x in a.net])
+  #   print("Measure position: ", a.determine_measure_position())
+  print(a.run_agent_none(1, None, None, 12))
   
 if __name__ == "__main__":
   main()
