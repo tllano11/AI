@@ -310,9 +310,18 @@ class AgentNone:
     state_seq.reverse()
     return state_seq
   
-  def move(self, pos_to_move):
-    self.current_pos = pos_to_move - 1
-    return [MOVE, pos_to_move]
+  def move(self, pos_to_move): 
+    if self.current_pos - pos_to_move - 1 == 1:
+      direction = 2
+    elif self.current_pos - pos_to_move - 1 == -1:
+      direction = 4
+    elif self.current_pos - pos_to_move - 1 == 5:
+      direction = 3
+    else:
+      direction = 1
+      
+    self.current_pos = pos_to_move - 1  
+    return [MOVE, direction]
   
   def shoot(self, pos_to_shoot):
     return [SHOOT, pos_to_shoot]
