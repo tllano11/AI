@@ -28,21 +28,21 @@ class Node:
     Keyword arguments:
     position -- Position from which to find adjacent positions.
     """
-    if position == 0: #Upper-left corner.
+    if position == 1: #Upper-left corner.
       return [position + 5, position + 1]
-    elif position == 4: #Upper-right corner.
+    elif position == 5: #Upper-right corner.
       return [position + 5, position - 1]
-    elif position == 20: #Lower-left corner.
+    elif position == 21: #Lower-left corner.
       return [position - 5, position + 1]
-    elif position == 24: #Lower-right corner.
+    elif position == 25: #Lower-right corner.
       return [position - 5, position - 1]
-    elif position == 1 or position == 2 or position == 3: #Upper wall.
+    elif position == 2 or position == 3 or position == 4: #Upper wall.
       return [position + 5, position - 1, position + 1]
-    elif position == 9 or position == 14 or position == 19: #Right wall.
+    elif position == 10 or position == 15 or position == 20: #Right wall.
       return [position + 5, position - 5, position - 1]
-    elif position == 5 or position == 10 or position == 15: #Left wall.
+    elif position == 6 or position == 11 or position == 16: #Left wall.
       return [position + 5, position - 5, position + 1]
-    elif position == 21 or position == 22 or position == 23: #Bottom wall.
+    elif position == 22 or position == 23 or position == 24: #Bottom wall.
       return [position - 5, position - 1, position + 1]
     else: #All other positions.
       return [position - 5, position + 5, position - 1, position + 1]
@@ -81,7 +81,7 @@ class AgentNone:
     #for the enemy being there, to 1/25 due to the lack
     #of information regarding their position.
     for i in range(0, nodes):
-      net.append(Node(i))
+      net.append(Node(i+1))
       net[i].value = 1/25
     return net
   
@@ -108,7 +108,7 @@ class AgentNone:
     enemy_net -- If true, then all updates will be done to the enemy net.
     """
     tmp_net = []
-    net_size = len(self.net)
+    net_size = len(self.net) 
     if not enemy_net:
       net = self.net
     else:
@@ -176,7 +176,7 @@ class AgentNone:
       green_probs.append(accum)
     #Returns the position in which the probability of
     #obtaining green when measuring is the highest.
-    return np.argmax(green_probs)
+    return self.net[np.argmax(green_probs)].id
 
   def determine_move_position(self):
     """Returns the best position to move.
@@ -196,17 +196,17 @@ class AgentNone:
     for i in adjacents:
       accum = 0
       for j in range(0, net_size):
-        distance = self.__get_distance(i, j)
+        distance = self.__get_distance(i-1, j)
         if distance == 0: #Probability of measure green at distance 0 from 'i'.
-          accum += self.enemy_net[i].value * self.ct[0][0]
+          accum += self.enemy_net[i-1].value * self.ct[0][0]
         elif distance == 1: #Probability of measure green at distance 1 from 'i'.
-          accum += self.enemy_net[i].value * self.ct[1][0]
+          accum += self.enemy_net[i-1].value * self.ct[1][0]
         elif distance == 2: #Probability of measure green at distance 2 from 'i'.
-          accum += self.enemy_net[i].value * self.ct[2][0]
+          accum += self.enemy_net[i-1].value * self.ct[2][0]
         elif distance == 3: #Probability of measure green at distance 3 from 'i'.
-          accum += self.enemy_net[i].value * self.ct[3][0]
+          accum += self.enemy_net[i-1].value * self.ct[3][0]
         else: #Probability of measure green at a distance >= 4 from 'i'.
-          accum += self.enemy_net[i].value * self.ct[4][0]
+          accum += self.enemy_net[i-1].value * self.ct[4][0]
       green_probs.append((i, accum))
     #Returns the position in which the probability of
     #obtaining green when measuring is the lowest.
@@ -219,7 +219,7 @@ class AgentNone:
   
   def run_agent_none(self, current_player, our_result, enemy_action, init_pos):
     
-    if enemy_action is not None:
+    if enemy_action[1] is not None:
       enemy_action[1] -= 1
     
     if self.player is None:
@@ -259,10 +259,9 @@ class AgentNone:
     hmm = HMM(transition_probabilities, emission_probabilities)
     emissions = [2, 1, 0]
     initial = self.__get_net_probs()
-    return(self.viterbi(hmm, initial, emissions)[0])
+    return(self.net[self.viterbi(hmm, initial, emissions)[0]].id)
 
   def desition_based_on_us(self, action_result):
-    print(action_result)
     if isinstance(action_result, int) or action_result is None:
       pos_to_measure = self.determine_measure_position()
       return self.measure(pos_to_measure)
@@ -275,12 +274,12 @@ class AgentNone:
       elif action_result == YELLOW:
         pos_to_shoot = self.__get_best_pos_to_shoot()
         return self.shoot(pos_to_shoot)
-      else:
-        pos_to_measure = self.determine_measure_position()
-        return self.measure(pos_to_measure)
+  
+    pos_to_measure = self.determine_measure_position()
+    return self.measure(pos_to_measure)
 
   def desition_based_on_enemy(self, enemy_action):
-    if enemy_action is not None:
+    if enemy_action[0] is not None:
       if enemy_action[0] == MEASURE:
         self.update_probs(enemy_action[2], enemy_action[1], True)
         if enemy_action[2] == GREEN or enemy_action[2] == YELLOW:
@@ -312,15 +311,15 @@ class AgentNone:
     return state_seq
   
   def move(self, pos_to_move):
-    self.current_pos = pos_to_move
-    return [MOVE, pos_to_move + 1]
+    self.current_pos = pos_to_move - 1
+    return [MOVE, pos_to_move]
   
   def shoot(self, pos_to_shoot):
-    return [SHOOT, pos_to_shoot + 1]
+    return [SHOOT, pos_to_shoot]
     
   def measure(self, pos_to_measure):
-    self.last_measured_pos = pos_to_measure
-    return [MEASURE, pos_to_measure + 1]
+    self.last_measured_pos = pos_to_measure - 1
+    return [MEASURE, pos_to_measure]
   
 def main():
   a = AgentNone()
@@ -332,9 +331,11 @@ def main():
   #a.update_probs("rojo", 11)
   #print(np.array([x.value for x in a.net]).reshape(5,5), "\n")
   #a.current_pos = 13
-  print(a.run_agent_none(1, None, None, 13))
-  print(a.run_agent_none(1, "amarillo", [2, 12, "amarillo"], 13))
-  print(a.run_agent_none(1, "verde", [2, 12, "amarillo"], 13))
+  print(a.run_agent_none(1, None, [None, None, None], 25))
+  print(a.run_agent_none(1, "amarillo", [2, 25, "verde"], 25))
+  print(a.net[a.current_pos-1].adjacents, a.current_pos)
+  print(a.run_agent_none(1, "amarillo", [2, 20, "verde"], 25))
+  #print(a.run_agent_none(1, "verde", [2, 12, "amarillo"], 13))
   print(np.array([x.value for x in a.net]).reshape(5,5), "\n")
   #print(a.determine_move_position())
   #   print("DESPUES: ",[x.value for x in a.net])
