@@ -28,23 +28,23 @@ class Node:
     Keyword arguments:
     position -- Position from which to find adjacent positions.
     """
-    if position == 1: #Upper-left corner.
+    if position == 1:                                        #Upper-left corner.
       return [position + 5, position + 1]
-    elif position == 5: #Upper-right corner.
+    elif position == 5:                                      #Upper-right corner.
       return [position + 5, position - 1]
-    elif position == 21: #Lower-left corner.
+    elif position == 21:                                     #Lower-left corner.
       return [position - 5, position + 1]
-    elif position == 25: #Lower-right corner.
+    elif position == 25:                                     #Lower-right corner.
       return [position - 5, position - 1]
-    elif position == 2 or position == 3 or position == 4: #Upper wall.
+    elif position == 2 or position == 3 or position == 4:    #Upper wall.
       return [position + 5, position - 1, position + 1]
     elif position == 10 or position == 15 or position == 20: #Right wall.
       return [position + 5, position - 5, position - 1]
-    elif position == 6 or position == 11 or position == 16: #Left wall.
+    elif position == 6 or position == 11 or position == 16:  #Left wall.
       return [position + 5, position - 5, position + 1]
     elif position == 22 or position == 23 or position == 24: #Bottom wall.
       return [position - 5, position - 1, position + 1]
-    else: #All other positions.
+    else:                                                    #All other positions.
       return [position - 5, position + 5, position - 1, position + 1]
 
 
@@ -105,7 +105,7 @@ class AgentNone:
     Keyword arguments:
     measure -- Color obtained from measure: green, yellow, orange, red
     p -- The position where the measure was made
-    enemy_net -- If true, then all updates will be done to the enemy net.
+    enemy_net -- If true, then all updates will be done to the enemy's net.
     """
     tmp_net = []
     net_size = len(self.net) 
@@ -213,11 +213,21 @@ class AgentNone:
     return min(green_probs, key=itemgetter(1))[0]
   
   def __get_net_probs(self):
-    """Returns a matrix containing all probabilities from each node comprising the net.
+    """Returns a matrix containing all probabilities from each node 
+    inside the net.
     """
     return np.array([node.value for node in self.net]).reshape(5,5)
   
   def run_agent_none(self, current_player, our_result, enemy_action, init_pos):
+    """Returns a list comprising an action, Move, Measure or shoot,
+    and its corresponding parameters.
+    
+    Keyword arguments:
+    current_player -- Which player is the agent playing as (1 or 2)
+    our_result -- The result of the agent's last action
+    enemy_action -- The result of the agent's enemy last action
+    init_pos -- Position where the agent starts playing.
+    """
     
     if enemy_action[1] is not None:
       enemy_action[1] -= 1
@@ -227,33 +237,36 @@ class AgentNone:
     
     if self.current_pos is None:
       self.current_pos = init_pos - 1
-    
+    #If player 1 is playing for the first time, then there is no
+    #information to rely on for taking an action different than
+    #measure.
     if self.last_measured_pos is None and self.player == 1:
       pos_measure = self.determine_measure_position()
       return self.measure(pos_measure)
+    #If player 2 is playing for the first time, then information
+    #about player 1's action can be used to determine what to do
+    #next.
     elif self.last_measured_pos is None and self.player == 2:
       action_based_on_enemy = self.desition_based_on_enemy(enemy_action)
       return action_based_on_enemy
-    
+    #Obtains an action based on the result of the last one.
     action_based_on_us = self.desition_based_on_us(our_result)
+    #Obtains an action based on the result of the enemy's last action
     action_based_on_enemy = self.desition_based_on_enemy(enemy_action)
-    
+    #If the enemy's last action represents a threat for the agent,
+    #then it plays defensively by moving to another position rather
+    #than measure or shoot.
     if action_based_on_enemy[0] == MOVE:
       return action_based_on_enemy
+    #If the enemy's last action does not represent a threat, 
+    #then the agent measures or shoots.
     else:
       return action_based_on_us
     
-    
-    """
-    action_based_on_enemy = self.desition_based_on_enemy(enemy_action)
-    if action_based_on_enemy[0] == MOVE:
-      return action_based_on_enemy
-    
-    action_based_on_us = self.desition_based_on_us(our_result)    
-    return action_based_on_us
-    """
-    
   def __get_best_pos_to_shoot(self):
+    """Returns a position in which is more likely to shoot the enemy.
+    """
+    #Gets the state of the markov model at time t.
     transition_probabilities = self.__get_net_probs()
     emission_probabilities = self.__get_net_probs()
     hmm = HMM(transition_probabilities, emission_probabilities)
@@ -262,11 +275,26 @@ class AgentNone:
     return(self.net[self.viterbi(hmm, initial, emissions)[0]].id)
 
   def desition_based_on_us(self, action_result):
+    """Returns an action and its parameters based on the results
+    obtained on a previous turn.
+    
+    Keyword parameters:
+    action_result -- Either a string, which reprents the measured color
+    at time t-2, an integer, which can be 1 if the agent shot its enemy
+    or 0 if it missed, or None, if move was the agent's last action.
+    """
     if isinstance(action_result, int) or action_result is None:
       pos_to_measure = self.determine_measure_position()
       return self.measure(pos_to_measure)
+    #If the agent's last action was to measure, then shooting
+    #should be considered only if green or yellow were the
+    #result.
     elif isinstance(action_result, str):
       self.update_probs(action_result, self.last_measured_pos)
+      #It is unlikely for the enemy to stay on a position if
+      #it is being targeted. Based on that assumption, the
+      #agent supposes measuring at the same position will
+      #result on obtaining yellow.
       if action_result == GREEN:
         self.update_probs(YELLOW, self.last_measured_pos)
         pos_to_shoot = self.__get_best_pos_to_shoot()
@@ -279,7 +307,19 @@ class AgentNone:
     return self.measure(pos_to_measure)
 
   def desition_based_on_enemy(self, enemy_action):
+    """Returns an action and its parameters based on the results
+    obtained on a the enemy's last action.
+    
+    Keyword arguments:
+    enemy_action -- An array comprised of three values:
+    The enemy's last action (move, measure or shoot), its
+    parameters and the corresponding results. 
+    """
+    #If it is the first turn for player one, then 
+    #enemy_action will be None.
     if enemy_action[0] is not None:
+      #If the enemy measured a position, then it is in the agent's
+      #best interest to track what information does they posses.
       if enemy_action[0] == MEASURE:
         self.update_probs(enemy_action[2], enemy_action[1], True)
         if enemy_action[2] == GREEN or enemy_action[2] == YELLOW:
@@ -294,62 +334,59 @@ class AgentNone:
     return self.measure(pos_to_measure)
   
   def viterbi(self, hmm, initial, emissions):
+    """Returns the best position to shoot.
+    In order to achieve it, the function uses HMM (Hidden Markov Models)
+    to get the best options and choose from the list the one that suits
+    our game in the best way possible, the Markov Model is located in the
+    same directory inside hmm.py file
+    """
     probabilities = hmm.emission(emissions[0]) * initial
     stack = []
     
     for emission in emissions[5:]:
-        trans_probabilities = hmm.transition_probabilities * np.row_stack(probabilities)
+        trans_probabilities = hmm.transition_probabilities * np.row_stack(probabilities)                        #Matrix for transition probabilities
         max_col_ixs = np.argmax(trans_probabilities, axis=0)
-        probabilities = hmm.emission(emission) * trans_probabilities[max_col_ixs, np.arange(hmm.num_states)]
-        stack.append(max_col_ixs)
-    state_seq = [np.argmax(probabilities)]
+        probabilities = hmm.emission(emission) * trans_probabilities[max_col_ixs, np.arange(hmm.num_states)]    #Probabilities
+        stack.append(max_col_ixs)                                                                               #Store the axis and the data in the stack
+    state_seq = [np.argmax(probabilities)]                                                                      #Store the resulted probabilities
 
     while stack:
-        max_col_ixs = stack.pop()
+        max_col_ixs = stack.pop()                                                                               #Take out the top data store in stack
         state_seq.append(max_col_ixs[state_seq[-1]])
     state_seq.reverse()
     return state_seq
   
   def move(self, pos_to_move): 
-    if self.current_pos - pos_to_move - 1 == 1:
+    """Returns a list with the "move" action and its parameters.
+    
+    Key arguments:
+    pos_to_move -- Position in which to move next.
+    """
+    if self.current_pos - pos_to_move - 1 == 1:     #Move to the left
       direction = 2
-    elif self.current_pos - pos_to_move - 1 == -1:
+    elif self.current_pos - pos_to_move - 1 == -1:  #Move to the right
       direction = 4
-    elif self.current_pos - pos_to_move - 1 == 5:
+    elif self.current_pos - pos_to_move - 1 == 5:   #Move to the top
       direction = 3
-    else:
+    else:                                           #Move to the bottom
       direction = 1
       
     self.current_pos = pos_to_move - 1  
     return [MOVE, direction]
   
   def shoot(self, pos_to_shoot):
+    """Returns a list with the "shoot" action and its parameters.
+    
+    Key arguments:
+    pos_to_shoot -- Position in which to shoot next.
+    """
     return [SHOOT, pos_to_shoot]
     
   def measure(self, pos_to_measure):
+    """Returns a list with the "measure" action and its parameters.
+    
+    Key arguments:
+    pos_to_measure -- Position in which to measure next.
+    """
     self.last_measured_pos = pos_to_measure - 1
     return [MEASURE, pos_to_measure]
-  
-def main():
-  a = AgentNone()
-  #  print("ANTES: ",[x.value for x in a.net], "\n")
-  #  print("Measure position: ", a.determine_measure_position())
-  #print(a.determine_measure_position(), "\n")
-  #a.update_probs("verde", 13)
-  #a.update_probs("amarillo", 13)
-  #a.update_probs("rojo", 11)
-  #print(np.array([x.value for x in a.net]).reshape(5,5), "\n")
-  #a.current_pos = 13
-  print(a.run_agent_none(1, None, [None, None, None], 25))
-  print(a.run_agent_none(1, "amarillo", [2, 25, "verde"], 25))
-  print(a.net[a.current_pos-1].adjacents, a.current_pos)
-  print(a.run_agent_none(1, "amarillo", [2, 20, "verde"], 25))
-  #print(a.run_agent_none(1, "verde", [2, 12, "amarillo"], 13))
-  print(np.array([x.value for x in a.net]).reshape(5,5), "\n")
-  #print(a.determine_move_position())
-  #   print("DESPUES: ",[x.value for x in a.net])
-  #   print("Measure position: ", a.determine_measure_position())
-  #print(a.run_agent_none(1, None, None, 12))
-  
-if __name__ == "__main__":
-  main()
