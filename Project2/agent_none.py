@@ -228,27 +228,21 @@ class AgentNone:
     enemy_action -- The result of the agent's enemy last action
     init_pos -- Position where the agent starts playing.
     """
-    
+
     if enemy_action[1] is not None:
       enemy_action[1] -= 1
     
     if self.player is None:
       self.player = current_player
-    
-    if self.current_pos is None:
-      self.current_pos = init_pos - 1
+
+    self.current_pos = init_pos - 1
     #If player 1 is playing for the first time, then there is no
     #information to rely on for taking an action different than
     #measure.
     if self.last_measured_pos is None and self.player == 1:
       pos_measure = self.determine_measure_position()
       return self.measure(pos_measure)
-    #If player 2 is playing for the first time, then information
-    #about player 1's action can be used to determine what to do
-    #next.
-    elif self.last_measured_pos is None and self.player == 2:
-      action_based_on_enemy = self.desition_based_on_enemy(enemy_action)
-      return action_based_on_enemy
+
     #Obtains an action based on the result of the last one.
     action_based_on_us = self.desition_based_on_us(our_result)
     #Obtains an action based on the result of the enemy's last action
@@ -362,16 +356,14 @@ class AgentNone:
     Key arguments:
     pos_to_move -- Position in which to move next.
     """
-    if self.current_pos - pos_to_move - 1 == 1:     #Move to the left
-      direction = 2
-    elif self.current_pos - pos_to_move - 1 == -1:  #Move to the right
+    if (self.current_pos + 1) - pos_to_move == 1:     #Move to the left
       direction = 4
-    elif self.current_pos - pos_to_move - 1 == 5:   #Move to the top
-      direction = 3
-    else:                                           #Move to the bottom
+    elif (self.current_pos + 1) - pos_to_move == -1:  #Move to the right
+      direction = 2
+    elif (self.current_pos + 1) - pos_to_move == 5:   #Move to the top
       direction = 1
-      
-    self.current_pos = pos_to_move - 1  
+    else:                                             #Move to the bottom
+      direction = 3
     return [MOVE, direction]
   
   def shoot(self, pos_to_shoot):
