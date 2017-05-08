@@ -1,4 +1,4 @@
-# Project 1: Estrellita Donde Estas AI
+# Project 2: Estrellita Donde Estas AI
 
 ## Objective
 Create an Agent, based on the Markov-Models inference algorithms
