@@ -27,10 +27,13 @@ class ANN:
     Keyword arguments:
     inputs -- Matrix containing all inputs to forward
     """
+    #Forwarded values from layers 1 to 2
     self.z2 = np.dot(inputs, self.W1)
+    #Output values from layer 2
     self.a2 = self.activate(self.z2, Functions.SIGMOID)
+    #Forwarded values from layers 2 to 3
     self.z3 = np.dot(self.a2, self.W2)
-    #Mathematically, this variable represents yHat
+    #Output from layer 3 (output layer)
     self.prediction = self.activate(self.z3, Functions.SIGMOID)
 
 
@@ -43,8 +46,9 @@ class ANN:
     """
     if function == Functions.SIGMOID:
       return sigmoid(z)
-    elif function == Functions.SOFTMAX:
-      pass
+    else:
+      print("Unrecognized activation function")
+      sys.exit(1)
 
 
   def back_propagate(self, expected_prediction, inputs):
@@ -67,10 +71,10 @@ class ANN:
     if self.error_function == Functions.MSE:
       if self.activation_function == Functions.SIGMOID:
         delta = np.multiply(mse_prime(expected_prediction, self.prediction),\
-                            sigmoid_prime(self.z3))
+                            sigmoid_prime(self.prediction))
         return delta
     else:
-      print("Error function not recognized")
+      print("Error: function not recognized")
       sys.exit(1)
 
 
@@ -80,5 +84,5 @@ class ANN:
         delta = np.dot(delta3, self.W2.T) * sigmoid_prime(self.z2)
         return delta
     else:
-      print("Error function not recognized")
+      print("Error: function not recognized")
       sys.exit(1)
