@@ -21,4 +21,4 @@ def main(archivo):
     lectura(archivo)
 
 if __name__ == "__main__":
-    main("Todos.xlsx")
+    main("./files/Todos.xlsx")
