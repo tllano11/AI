@@ -16,10 +16,10 @@ class ANN:
     self.error_function = error_function
     #Initialize weights from layers 1-2
     self.W1 = np.random.randn(self.input_layer_size,\
-                              self.hidden_layer_size)
+                              self.hidden_layer_size).astype(np.float64)
     #Initialize weights from layers 2-3
     self.W2 = np.random.randn(self.hidden_layer_size,\
-                              self.output_layer_size)
+                              self.output_layer_size).astype(np.float64)
 
 
   def forward_propagate(self, inputs):
@@ -29,11 +29,11 @@ class ANN:
     inputs -- Matrix containing all inputs to forward
     """
     #Forwarded values from layers 1 to 2
-    self.z2 = np.dot(inputs, self.W1)
+    self.z2 = np.dot(inputs, self.W1).astype(np.float64)
     #Output values from layer 2
     self.a2 = self.activate(self.z2, Functions.SIGMOID)
     #Forwarded values from layers 2 to 3
-    self.z3 = np.dot(self.a2, self.W2)
+    self.z3 = np.dot(self.a2, self.W2).astype(np.float64)
     #Output from layer 3 (output layer)
     self.prediction = self.activate(self.z3, Functions.SIGMOID)
 
@@ -133,7 +133,7 @@ def main():
   Y = np.array([75, 82, 93]).reshape(3, 1)
   Y = Y/100
 
-  ann.train(X, Y, 0.0086, 1000)
+  ann.train(X, Y, 0.0086, 10000)
   ann.forward_propagate(X)
   yHat = ann.prediction
   print(yHat)
