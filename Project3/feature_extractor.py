@@ -2,25 +2,20 @@ import nltk
 import numpy as np
 
 
-def extract_features(selected_tweets, not_selected_tweets):
-  selected_tweets = np.array(selected_tweets, dtype=object)
-  not_selected_tweets = np.array(not_selected_tweets, dtype=object)
+def extract_features(tweets):
+  tweets = np.array(tweets, dtype=object)
 
-  #All words from all selected tweets
-  words_in_st = np.hstack(selected_tweets.flat)
-  #All words from all rejected tweets
-  words_in_nst = np.hstack(not_selected_tweets.flat)
+  #All words from all tweets
+  words_in_st = np.hstack(tweets.flat)
 
   #Size of selected tweets
-  size_st = len(selected_tweets)
-  #Size of not selected tweets
-  size_nst = len(not_selected_tweets)
+  size_st = len(tweets)
 
   word_tweets_amount = {}
 
   #Computes how many documments have at least one instance of each word.
   for word in set(words_in_st):
-    for tweet in selected_tweets:
+    for tweet in tweets:
       if word in tweet:
         if word in word_tweets_amount:
           word_tweets_amount[word] += 1
@@ -29,7 +24,7 @@ def extract_features(selected_tweets, not_selected_tweets):
   word_index = {}
 
   #Computes "relevance index" for each word.
-  for tweet in selected_tweets:
+  for tweet in tweets:
     word_frequence_tweet = nltk.FreqDist(tweet)
     for word in word_frequence_tweet:
       index = (word_frequence_tweet[word]/word_tweets_amount[word])/size_st
@@ -40,8 +35,9 @@ def extract_features(selected_tweets, not_selected_tweets):
   return word_index
 
 if __name__ == "__main__":
-  i = extract_features([['hola', 'hola'],\
+  i_st = extract_features([['hola', 'hola'],\
                         ['hola', 'hola','hola'],\
-                        ['usted','usted', 'como', 'usted']],\
-                       [['david', 'andres'], ['andres']])
-  print(i)
+                        ['usted','usted', 'como', 'usted']])
+  i_nst = extract_features([['david', 'andres'], ['andres']])
+  print("Selected tweets index: \n", i_st)
+  print("Rejected tweets index: \n", i_nst)
