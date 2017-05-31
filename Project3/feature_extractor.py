@@ -8,7 +8,7 @@ def extract_features(tweets):
   #All words from all tweets
   words_in_st = np.hstack(tweets.flat)
 
-  #Size of selected tweets
+  #Size of  tweets
   size_st = len(tweets)
 
   word_tweets_amount = {}
@@ -33,6 +33,14 @@ def extract_features(tweets):
       else:
         word_index[word] += index
   return word_index
+
+def get_relevant_words(s_tweets_features, r_tweets_features):
+  for word in s_tweets_features:
+    for word2 in r_tweets_features:
+      if word in r_tweets_features:
+        pass
+      else:
+        pass
 
 if __name__ == "__main__":
   i_st = extract_features([['hola', 'hola'],\

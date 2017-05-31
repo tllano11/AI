@@ -13,19 +13,24 @@ from naive_bayes import NaiveBayes
 from nltk.stem import *
 from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
+import feature_extractor as fe
+import operator
+import pandas
+import matplotlib.pyplot as plt
+
+from ann import ANN
+from functions import Functions
+
+net_output = []
 
 """Funcion para la lectura del archivo de excel con el campo texto predefinido"""
 
-def read(nombreArchivo,nombreArchivo2):
-    listaTweets = []
-    listaTweets2 = []
-    excel = pe.iget_records(file_name=nombreArchivo)
-    excel2 = pe.iget_records(file_name=nombreArchivo2)
+def read(file_name):
+    tweets = []
+    excel = pe.iget_records(file_name=file_name)
     for tweet in excel:
-        listaTweets.append(tweet['Texto'])
-    for tweet2 in excel2:
-        listaTweets2.append(tweet2['Texto'])
-    return tokenize(listaTweets),tokenize(listaTweets2)
+        tweets.append(tweet['Texto'])
+    return tokenize(tweets)
 
 def tokenize(tweets):
     list_tokens = []
@@ -52,12 +57,46 @@ def stop_words(words):
             filteredWords.append(stem_token(w))
     return filteredWords
 
+def train_net(net, selected_tweets, rejected_tweets):
+    inputs, outs = net.get_training_set(selected_tweets, rejected_tweets)
+    net.train(inputs, outs)
+
+def classify_using_net(net, tweets):
+    global net_output
+    result = net.classify(tweets)
+    for r in result:
+        if r[0] >= r[1]:
+            net_output.append("selected")
+        else:
+            net_output.append("rejected")
+
 def main(archivo,archivo2):
     selected_tweets, rejected_tweets = read(archivo,archivo2)
-    naive_bayes = NaiveBayes()
-    naive_bayes.train(selected_tweets, rejected_tweets)
-    result = naive_bayes.classify(rejected_tweets[0])
-    print(result)
-    
+    #naive_bayes = NaiveBayes()
+    #naive_bayes.train(selected_tweets, rejected_tweets)
+    #result = naive_bayes.classify(rejected_tweets[0])
+    #print(result)
+    st = fe.extract_features(selected_tweets)
+    nst = fe.extract_features(rejected_tweets)
+    words_selected_tweets = sorted(st.items(), key=operator.itemgetter(1), reverse=True)
+    words_rejected_teets = sorted(nst.items(), key=operator.itemgetter(1), reverse=True)
+
+    net = ANN(Functions.SOFTMAX, Functions.MSE)
+    """inputs, outs = net.get_training_set(selected_tweets, rejected_tweets)
+    net.train(inputs, outs)
+    r = net.classify(selected_tweets[:10])
+    print(r)"""
+
+    train_net(net, selected_tweets, rejected_tweets)
+    classify_using_net(net, selected_tweets[:10])
+    print(net_output)
+
+    """df = pandas.DataFrame.from_dict(nst, orient='index')
+    df.plot(kind='bar')
+    plt.show()"""
+
+    #print(sorted(st.items(), key=operator.itemgetter(1), reverse=True))
+    #print(len(set(words_rejected_teets + words_selected_tweets)))
+
 if __name__ == "__main__":
     main("./files/Tweets_Seleccionados.xlsx","./files/Tweets_Rechazados.xlsx")
