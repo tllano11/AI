@@ -6,10 +6,10 @@ class NaiveBayes:
     def __init__(self):
         self.classifier = None
         self.word_features = None
-        
+
     def train(self, listaTweets, listaTweets2):
         selected_tweets = listaTweets
-        rejected_tweets = listaTweets
+        rejected_tweets = listaTweets2
         self.word_features = self.features(selected_tweets, rejected_tweets)
         training_set = self.get_training_set(selected_tweets, rejected_tweets)
         self.classifier = nltk.NaiveBayesClassifier.train(training_set)
