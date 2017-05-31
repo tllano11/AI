@@ -3,6 +3,8 @@
 from functions import *
 import numpy as np
 import sys
+import operator
+import feature_extractor as fe
 
 class ANN:
 
@@ -16,11 +18,10 @@ class ANN:
     self.error_function = error_function
     #Initialize weights from layers 1-2
     self.W1 = np.random.randn(self.input_layer_size,\
-                              self.hidden_layer_size).astype(np.float64)
+                              self.hidden_layer_size).astype(np.float128)
     #Initialize weights from layers 2-3
     self.W2 = np.random.randn(self.hidden_layer_size,\
-                              self.output_layer_size).astype(np.float64)
-
+                              self.output_layer_size).astype(np.float128)
 
   def forward_propagate(self, inputs):
     """Propagate input values through the network
@@ -29,14 +30,13 @@ class ANN:
     inputs -- Matrix containing all inputs to forward
     """
     #Forwarded values from layers 1 to 2
-    self.z2 = np.dot(inputs, self.W1).astype(np.float64)
+    self.z2 = np.dot(inputs, self.W1).astype(np.float128)
     #Output values from layer 2
     self.a2 = self.activate(self.z2, Functions.SIGMOID)
     #Forwarded values from layers 2 to 3
-    self.z3 = np.dot(self.a2, self.W2).astype(np.float64)
+    self.z3 = np.dot(self.a2, self.W2).astype(np.float128)
     #Output from layer 3 (output layer)
     self.prediction = self.activate(self.z3, Functions.SIGMOID)
-
 
   def activate(self, z, function):
     """Apply an activation function to the activities of a layer
@@ -50,7 +50,6 @@ class ANN:
     else:
       print("Unrecognized activation function")
       sys.exit(1)
-
 
   def back_propagate(self, expected_prediction, inputs):
     """Back propagates error through the network
@@ -71,8 +70,7 @@ class ANN:
     #Update weights from layers 1 to 2
     self.W1 = self.W1 - (self.learning_rate * djdW1)
 
-
-  def train(self, inputs, expected_prediction, max_err, niter):
+  def train(self, inputs, expected_prediction, max_err):
     """ Trains the neuronal network by updating its weights.
 
     Keyword arguments:
@@ -80,18 +78,46 @@ class ANN:
     expected_predictions -- Matrix containing the expected net's output values
     max_err -- Expected maximum error for the network
     """
-    it = 0
     self.forward_propagate(inputs)
     error = self.get_error(Functions.MSE, expected_prediction)
 
-    while error > max_err and it < niter:
+    while error > max_err:
       self.back_propagate(expected_prediction, inputs)
       self.forward_propagate(inputs)
       error = self.get_error(Functions.MSE, expected_prediction)
-      it += 1
 
-    if it == niter:
-      print("Training failed in {} iterations.".format(niter))
+  def get_training_set(self, selected_tweets, rejected_tweets):
+    st = fe.extract_features(selected_tweets)
+    nst = fe.extract_features(rejected_tweets)
+    self.set_bag_of_words(st, nst)
+    inputs = []
+    outs = []
+
+    for tweet in selected_tweets:
+      bag = []
+      for word in self.bag_of_words:
+        bag.append(1) if word in tweet else bag.append(0)
+      inputs.append(bag)
+      outs.append([1, 0])
+
+    for tweet in rejected_tweets:
+      bag = []
+      for word in self.bag_of_words:
+        bag.append(1) if word in tweet else bag.append(0)
+      inputs.append(bag)
+      outs.append([0, 1])
+
+    return inputs, outs
+
+  def set_bag_of_words(self, st, nst):
+    words_selected_tweets = sorted(st.items(), key=operator.itemgetter(1),\
+                                   reverse=True)
+    words_rejected_teets = sorted(nst.items(), key=operator.itemgetter(1),\
+                                  reverse=True)
+    bag_selected = [k for k, v in words_selected_tweets]
+    bag_rejected = [k for k, v in words_rejected_teets]
+
+    self.bag_of_words = bag_selected + bag_rejected
 
   def get_error(self, function, expected_prediction):
     """ Returns the net's total error.
@@ -104,7 +130,6 @@ class ANN:
       error = mse(expected_prediction, self.prediction)
       return error.sum()
 
-
   def get_delta3(self, expected_prediction):
     if self.error_function == Functions.MSE:
       if self.activation_function == Functions.SIGMOID:
@@ -115,7 +140,6 @@ class ANN:
       print("Error: function not recognized")
       sys.exit(1)
 
-
   def get_delta2(self, delta3):
     if self.error_function == Functions.MSE:
       if self.activation_function == Functions.SIGMOID:
@@ -125,15 +149,14 @@ class ANN:
       print("Error: function not recognized")
       sys.exit(1)
 
-
 def main():
   ann = ANN(Functions.SIGMOID, Functions.MSE)
-  X = np.array([[3, 5], [5, 1], [10, 2]]).reshape(3, 2)
+  X = np.array([[3, 5], [5, 1], [10, 2]]).reshape(3, 2).astype(np.float128)
   X = X/np.amax(X, axis=0)
-  Y = np.array([75, 82, 93]).reshape(3, 1)
+  Y = np.array([75, 82, 93]).reshape(3, 1).astype(np.float128)
   Y = Y/100
 
-  ann.train(X, Y, 0.0086, 10000)
+  ann.train(X, Y, 0.0056)
   ann.forward_propagate(X)
   yHat = ann.prediction
   print(yHat)
