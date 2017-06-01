@@ -1,4 +1,4 @@
-import lectura as reader
+import reader
 import numpy as np
 import threading
 import argparse
@@ -21,6 +21,9 @@ def train_net(net, selected_tweets, rejected_tweets):
   f = open('ann_trained.pickle', 'wb')
   pickle.dump(net, f)
   f.close()
+  with open('error_ann.csv', 'w') as csvfile:
+    writer = csv.writer(csvfile, delimiter=' ')
+    writer.writerow(net.error)
 
 def train_nb (nb, selected_tweets, rejected_tweets):
   nb.train(selected_tweets, rejected_tweets)
@@ -42,6 +45,7 @@ def classify_using_net(net, tweets):
       ann_output.append("selected")
     else:
       ann_output.append("rejected")
+
   with open('results_ann.csv', 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=' ')
     writer.writerow(ann_output)

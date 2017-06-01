@@ -13,7 +13,7 @@ class ANN:
     self.input_layer_size = 114
     self.output_layer_size = 2
     self.hidden_layer_size = 10
-    self.learning_rate = 0.1
+    self.learning_rate = 0.001
     self.activation_function = activation_function
     self.error_function = error_function
     #Initialize weights from layers 1-2
@@ -48,7 +48,7 @@ class ANN:
     #Forwarded values from layers 1 to 2
     self.z2 = np.dot(inputs, self.W1).astype(np.float128)
     #Output values from layer 2
-    self.a2 = self.activate(self.z2, self.activation_function)
+    self.a2 = np.tanh(self.z2)
     #Forwarded values from layers 2 to 3
     self.z3 = np.dot(self.a2, self.W2).astype(np.float128)
     #Output from layer 3 (output layer)
@@ -79,14 +79,22 @@ class ANN:
     delta3 = self.get_delta3(expected_prediction)
     djdW2 = np.dot(self.a2.T, delta3)
 
+    for i in range(len(djdW2)):
+      accum = sum(djdW2[i])
+      self.W2[i] = self.W2[i] - (self.learning_rate * accum)
+
     #Update weights from layers 2 to 3
-    self.W2 = self.W2 - (self.learning_rate * djdW2)
+    #self.W2 = self.W2 - (self.learning_rate * djdW2)
 
     delta2 = self.get_delta2(delta3)
     djdW1 = np.dot(inputs.T, delta2)
 
+    for i in range(len(djdW1)):
+      accum = sum(djdW1[i])
+      self.W1[i] = self.W1[i] - (self.learning_rate * accum)
+
     #Update weights from layers 1 to 2
-    self.W1 = self.W1 - (self.learning_rate * djdW1)
+    #self.W1 = self.W1 - (self.learning_rate * djdW1)
 
   def train(self, inputs, expected_prediction):
     """ Trains the neuronal network by updating its weights.
@@ -96,10 +104,11 @@ class ANN:
     expected_predictions -- Matrix containing the expected net's output values
     max_err -- Expected maximum error for the network
     """
-    self.forward_propagate(inputs)
-    self.back_propagate(expected_prediction, inputs)
-    self.forward_propagate(inputs)
-    self.error = self.get_error(Functions.MSE, expected_prediction)
+    for i in range(25):
+      self.forward_propagate(inputs)
+      self.back_propagate(expected_prediction, inputs)
+      self.forward_propagate(inputs)
+      self.get_error(Functions.MSE, self.prediction)
 
   def get_training_set(self, selected_tweets, rejected_tweets):
     st = fe.extract_features(selected_tweets)
@@ -146,9 +155,12 @@ class ANN:
     function -- Integer representing which error function to use
     expected_prediction -- Matrix containing the expected net's output values
     """
+    ferror = []
     if function == Functions.MSE:
       error = mse(expected_prediction, self.prediction)
-      return error
+    for e in error:
+      ferror.append(sum(e))
+    self.error = ferror
 
   def get_delta3(self, expected_prediction):
     if self.error_function == Functions.MSE:
@@ -163,25 +175,8 @@ class ANN:
 
   def get_delta2(self, delta3):
     if self.error_function == Functions.MSE:
-      if self.activation_function == Functions.SIGMOID or\
-         self.activation_function == Functions.SOFTMAX:
-        delta = np.dot(delta3, self.W2.T) * sigmoid_prime(self.z2)
-        return delta
+      delta = np.dot(delta3, self.W2.T) * tanh_prime(self.z2)
+      return delta
     else:
       print("Error: function not recognized")
       sys.exit(1)
-
-def main():
-  ann = ANN(Functions.SIGMOID, Functions.MSE)
-  X = np.array([[3, 5], [5, 1], [10, 2]]).reshape(3, 2).astype(np.float128)
-  X = X/np.amax(X, axis=0)
-  Y = np.array([75, 82, 93]).reshape(3, 1).astype(np.float128)
-  Y = Y/100
-
-  ann.train(X, Y, 0.0056)
-  ann.forward_propagate(X)
-  yHat = ann.prediction
-  print(yHat)
-
-if __name__ == "__main__":
-  main()

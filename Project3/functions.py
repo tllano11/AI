@@ -25,6 +25,9 @@ def softmax(z):
   e_z = np.exp(z - np.max(z))
   return e_z / e_z.sum(axis=0)
 
+def tanh_prime(prediction):
+  return 1-(prediction**2)
+
 def mse(expected_prediction, prediction):
   """Returns the Mean Squared Error of the net's output values
 

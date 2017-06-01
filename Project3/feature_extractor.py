@@ -33,19 +33,3 @@ def extract_features(tweets):
       else:
         word_index[word] += index
   return word_index
-
-def get_relevant_words(s_tweets_features, r_tweets_features):
-  for word in s_tweets_features:
-    for word2 in r_tweets_features:
-      if word in r_tweets_features:
-        pass
-      else:
-        pass
-
-if __name__ == "__main__":
-  i_st = extract_features([['hola', 'hola'],\
-                        ['hola', 'hola','hola'],\
-                        ['usted','usted', 'como', 'usted']])
-  i_nst = extract_features([['david', 'andres'], ['andres']])
-  print("Selected tweets index: \n", i_st)
-  print("Rejected tweets index: \n", i_nst)
