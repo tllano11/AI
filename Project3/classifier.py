@@ -15,7 +15,13 @@ nb_output = []
 bn_output = []
 
 def train_net(net, selected_tweets, rejected_tweets):
-  inputs, outs = net.get_training_set(selected_tweets, rejected_tweets)
+  train_s_tweets = selected_tweets[:280]
+  train_r_tweets = rejected_tweets[:411]
+
+  test_input, test_out = net.get_training_set(selected_tweets[280:],\
+                                             rejected_tweets[411:])
+  inputs, outs = net.get_training_set(train_s_tweets, train_r_tweets)
+
   net.train(inputs, outs)
   net.get_error(Functions.MSE, outs)
   f = open('ann_trained.pickle', 'wb')
@@ -24,6 +30,18 @@ def train_net(net, selected_tweets, rejected_tweets):
   with open('error_ann.csv', 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=' ')
     writer.writerow(net.error)
+
+  result = net.classify(selected_tweets[280:] + rejected_tweets[411:])
+
+  count = 0
+  for i in range(len(result)):
+    if result[i][0] > result[i][1]:
+      if test_out[i][0] == 1:
+        count += 1
+    elif result[i][0] < result[i][1]:
+      if test_out[i][0] == 0:
+        count += 1
+  print("Accuracy: ", count/len(test_input))
 
 def train_nb (nb, selected_tweets, rejected_tweets):
   nb.train(selected_tweets, rejected_tweets)

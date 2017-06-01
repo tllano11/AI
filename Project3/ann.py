@@ -24,11 +24,17 @@ class ANN:
                               self.output_layer_size).astype(np.float128)
 
   def classify(self, tweets):
+    """Returns a matrix of size 114x2, representing the nets output,
+    after executing forward propagation for the set of tweets given.
+    """
     inputs = self.get_input(tweets)
     self.forward_propagate(inputs)
     return self.prediction
 
   def get_input(self, tweets):
+    """Returns an array of type len(tweets)x114, corresponding to the
+    existance of each word in the bag of words, in an specific tweet.
+    """
     inputs = []
     for tweet in tweets:
       bag = []
@@ -79,26 +85,20 @@ class ANN:
     delta3 = self.get_delta3(expected_prediction)
     djdW2 = np.dot(self.a2.T, delta3)
 
+    #Update weights from layers 2 to 3
     for i in range(len(djdW2)):
       accum = sum(djdW2[i])
       for weight in self.W2:
         weight = weight - (self.learning_rate * accum)
-      #self.W2[i] = self.W2[i] - (self.learning_rate * accum)
-
-    #Update weights from layers 2 to 3
-    #self.W2 = self.W2 - (self.learning_rate * djdW2)
 
     delta2 = self.get_delta2(delta3)
     djdW1 = np.dot(inputs.T, delta2)
 
+    #Update weights from layers 1 to 2
     for i in range(len(djdW1)):
       accum = sum(djdW1[i])
       for weight in self.W1:
         weight = weight - (self.learning_rate * accum)
-      #self.W1[i] = self.W1[i] - (self.learning_rate * accum)
-
-    #Update weights from layers 1 to 2
-    #self.W1 = self.W1 - (self.learning_rate * djdW1)
 
   def train(self, inputs, expected_prediction):
     """ Trains the neuronal network by updating its weights.
@@ -108,20 +108,26 @@ class ANN:
     expected_predictions -- Matrix containing the expected net's output values
     max_err -- Expected maximum error for the network
     """
-    for i in range(100):
+    # Number of ephocs for the network to train itself
+    for i in range(60):
       self.forward_propagate(inputs)
       self.back_propagate(expected_prediction, inputs)
       self.forward_propagate(inputs)
       self.get_error(Functions.MSE, self.prediction)
 
   def get_training_set(self, selected_tweets, rejected_tweets):
+    """ Obtains training set from selected and rejected tweets"""
+
+    #Dictionary containing most relevant words in selected tweets.
     st = fe.extract_features(selected_tweets)
+    #Dictionary containing most relevant words in rejected tweets.
     nst = fe.extract_features(rejected_tweets)
     self.set_bag_of_words(st, nst)
     bog_size = len(self.bag_of_words)
     inputs = []
     outs = []
 
+    #Obtains input data for selected tweets.
     for tweet in selected_tweets:
       bag = []
       for word in self.bag_of_words:
@@ -129,6 +135,7 @@ class ANN:
       inputs.append(bag)
       outs.append([1, 0])
 
+    #Obtains output data for rejected tweets.
     for tweet in rejected_tweets:
       bag = []
       for word in self.bag_of_words:
@@ -143,6 +150,15 @@ class ANN:
     return inputs, outs
 
   def set_bag_of_words(self, st, nst):
+    """Set bag of words based on relevant words from selected and rejected
+    tweets.
+
+    Keyword arguments:
+    st -- Dictionary containing most relevant words, as well as its indexes,
+    for selected tweets.
+    nst -- Dictionary containing most relevant words, as well as its indexes,
+    for rejected tweets.
+    """
     words_selected_tweets = sorted(st.items(), key=operator.itemgetter(1),\
                                    reverse=True)
     words_rejected_teets = sorted(nst.items(), key=operator.itemgetter(1),\
@@ -155,7 +171,7 @@ class ANN:
   def get_error(self, function, expected_prediction):
     """ Returns the net's total error.
 
-    Key arguments:
+    Keyword arguments:
     function -- Integer representing which error function to use
     expected_prediction -- Matrix containing the expected net's output values
     """
@@ -167,6 +183,7 @@ class ANN:
     self.error = ferror
 
   def get_delta3(self, expected_prediction):
+    """Get delta value for the gradient dJdW2"""
     if self.error_function == Functions.MSE:
       if self.activation_function == Functions.SIGMOID or\
          self.activation_function == Functions.SOFTMAX:
@@ -178,6 +195,7 @@ class ANN:
       sys.exit(1)
 
   def get_delta2(self, delta3):
+    """Get delta value for the gradient djdW1 """
     if self.error_function == Functions.MSE:
       delta = np.dot(delta3, self.W2.T) * tanh_prime(self.z2)
       return delta
