@@ -18,7 +18,7 @@ def sigmoid(z):
   return 1/(1+np.exp(-z))
 
 def sigmoid_prime(prediction):
-  return prediction * (1-prediction)
+  return np.multiply(prediction, (1-prediction))
 
 def softmax(z):
   """Compute softmax values for z"""
