@@ -12,8 +12,8 @@ class ANN:
     #Define HyperParameters
     self.input_layer_size = 114
     self.output_layer_size = 2
-    self.hidden_layer_size = 10
-    self.learning_rate = 0.001
+    self.hidden_layer_size = 3
+    self.learning_rate = 0.1
     self.activation_function = activation_function
     self.error_function = error_function
     #Initialize weights from layers 1-2
@@ -81,7 +81,9 @@ class ANN:
 
     for i in range(len(djdW2)):
       accum = sum(djdW2[i])
-      self.W2[i] = self.W2[i] - (self.learning_rate * accum)
+      for weight in self.W2:
+        weight = weight - (self.learning_rate * accum)
+      #self.W2[i] = self.W2[i] - (self.learning_rate * accum)
 
     #Update weights from layers 2 to 3
     #self.W2 = self.W2 - (self.learning_rate * djdW2)
@@ -91,7 +93,9 @@ class ANN:
 
     for i in range(len(djdW1)):
       accum = sum(djdW1[i])
-      self.W1[i] = self.W1[i] - (self.learning_rate * accum)
+      for weight in self.W1:
+        weight = weight - (self.learning_rate * accum)
+      #self.W1[i] = self.W1[i] - (self.learning_rate * accum)
 
     #Update weights from layers 1 to 2
     #self.W1 = self.W1 - (self.learning_rate * djdW1)
@@ -104,7 +108,7 @@ class ANN:
     expected_predictions -- Matrix containing the expected net's output values
     max_err -- Expected maximum error for the network
     """
-    for i in range(25):
+    for i in range(100):
       self.forward_propagate(inputs)
       self.back_propagate(expected_prediction, inputs)
       self.forward_propagate(inputs)
