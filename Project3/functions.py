@@ -1,13 +1,13 @@
 import numpy as np
-from enum import IntEnum, auto
+from enum import Enum
 
 
-class Functions(IntEnum):
+class Functions(Enum):
   #Activation functions
-  SIGMOID = auto()
-  SOFTMAX = auto()
+  SIGMOID = 1
+  SOFTMAX = 2
   #Error functions
-  MSE = auto()
+  MSE = 3
 
 def sigmoid(z):
   """Apply sigmoid activation function

@@ -1,24 +1,16 @@
-""" INSTALACION
-sudo -H pip install setuptools
-sudo -H pip install pyexcel
-sudo -H pip install pyexcel-xlsx
-nltk.download('punkt')
-nltk.download('stopwords')
-"""
-
-import pyexcel as pe
 import nltk
-import numpy as np
-from naive_bayes import NaiveBayes
-from nltk.stem import *
-from nltk.corpus import stopwords
-from nltk.tokenize import RegexpTokenizer
-import feature_extractor as fe
-import operator
 import pandas
-import matplotlib.pyplot as plt
-
+import operator
+import numpy as np
+import pyexcel as pe
+from nltk.stem import *
 from ann import ANN
+import feature_extractor as fe
+import matplotlib.pyplot as plt
+from nltk.corpus import stopwords
+from naive_bayes import NaiveBayes
+from nltk.tokenize import RegexpTokenizer
+
 from functions import Functions
 
 net_output = []

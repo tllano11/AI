@@ -1,6 +1,8 @@
+import nltk
 import sys
 import numpy as np
-import nltk
+from sklearn.naive_bayes import BernoulliNB
+from nltk.classify.scikitlearn import SklearnClassifier
 
 class Bernoulli:
     def __init__(self):
@@ -12,7 +14,8 @@ class Bernoulli:
         rejected_tweets = listaTweets2
         self.word_features = self.features(selected_tweets, rejected_tweets)
         training_set = self.get_training_set(selected_tweets, rejected_tweets)
-        self.classifier = nltk.BernoulliNB_classifier.train(training_set)
+        self.classifier = SklearnClassifier(BernoulliNB())
+        self.classifier.train(training_set)
 
     def features(self, selected_tweets, rejected_tweets):
         selected_tweets = np.array(selected_tweets,dtype=object)
